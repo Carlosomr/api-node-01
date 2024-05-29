@@ -1,15 +1,33 @@
-const express = require("express");
+require('express-async-errors')
+const database = require('./database/sqlite')
+const AppError = require('./utils/AppError')
 
-const app = express();
-app.use(express.json());
-   
-app.get("/message/:id", (request, response) =>{
-    const { id } = request.params; 
-    response.send(`id:${id}`)
+const express = require('express')
+
+const routes = require('./routes')
+
+const app = express()
+app.use(express.json())
+
+app.use(routes)
+
+database()
+
+app.use((error, request, response, next) => {
+  if (error instanceof AppError) {
+    return response.status(error.statusCode).json({
+      status: 'error',
+      message: error.message
+    })
+  }
+
+  console.error(error)
+
+  return response.status(500).json({
+    status: 'error',
+    message: 'Internal server error'
+  })
 })
-app.post("/user", (request, response)=> {
-    const {name, email, password} = request.body;
-    response.send(`Usuario: ${name}. E-mail: ${email}. E a senha é ${password}`)
-}) 
-const PORT = 3333;
-app.listen(PORT, () => console.log(`Server está na porta ${PORT}`));
+
+const PORT = 3333
+app.listen(PORT, () => console.log(`Server is running on Port ${PORT}`))
